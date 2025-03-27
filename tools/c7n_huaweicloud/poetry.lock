@@ -212,6 +212,7 @@ version = "3.1.140"
 description = "COC"
 optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,>=2.7"
+groups = ["main"]
 files = [
     {file = "huaweicloudsdkcoc-3.1.140-py2.py3-none-any.whl", hash = "sha256:5d428d78322ca2718dc89c774986437befd13faff59c4507b610c2a2fa6eb48f"},
 ]
@@ -458,6 +459,34 @@ python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,>=2.7"
 groups = ["main"]
 files = [
     {file = "huaweicloudsdkobs-3.1.140-py2.py3-none-any.whl", hash = "sha256:e83e69767d152dcf01334fc5758c29efe689e0a4dc875b4ac503846ad707f790"},
+]
+
+[package.dependencies]
+huaweicloudsdkcore = ">=3.1.140"
+
+[[package]]
+name = "huaweicloudsdkorganizations"
+version = "3.1.140"
+description = "Organizations"
+optional = false
+python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,>=2.7"
+groups = ["main"]
+files = [
+    {file = "huaweicloudsdkorganizations-3.1.140-py2.py3-none-any.whl", hash = "sha256:e9910c50912ca0dc50cea33e1017e4e7510c6977eb15c57817125e940f154143"},
+]
+
+[package.dependencies]
+huaweicloudsdkcore = ">=3.1.140"
+
+[[package]]
+name = "huaweicloudsdksecmaster"
+version = "3.1.140"
+description = "SecMaster"
+optional = false
+python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,>=2.7"
+groups = ["main"]
+files = [
+    {file = "huaweicloudsdksecmaster-3.1.140-py2.py3-none-any.whl", hash = "sha256:0b5440310dad919b3c480a3120dbd66fd126e833f3c9a3532460c213d4a0e64d"},
 ]
 
 [package.dependencies]
@@ -1080,4 +1109,4 @@ zstd = ["zstandard (>=0.18.0)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.8"
-content-hash = "d3f32cfa075845a8d6063f3f38d9351080f4af50455ddecb25e1907ce05a6e42"
+content-hash = "1b57f7add32e89c341c2aaa256829e36a8d949289267f044b38fd0b88adb5a56"
