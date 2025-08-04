@@ -1,6 +1,6 @@
 policies:
-  - name: non-compliant-patch
-    resource: huaweicloud.coc
+  - name: non-compliant-patch-alarm
+    resource: huaweicloud.coc-patch
     filters:
       - type: value
         key: status
@@ -19,9 +19,19 @@ policies:
         value: 'cn-north-4'
         op: eq
     actions:
-      - type: non_compliant_alarm
-        smn: True
-        region_id: 'cn-north-4'
-        topic_urn: 'urn:smn:cn-north-4:xxxxx:custodian_test'
+      - type: patch_non_compliant_alarm
+        topic_urn_list:
+          - 'urn:smn:cn-north-4:xxxxx:custodian_test'
         subject: 'Machine Non-compliant Patch Version Alert'
-        message: 'There are machines with non compliant patch versions installed under your account:'
+        message: 'There are machines with non compliant patch versions installed under your account'
+  - name: script-non-reviewer-alarm
+    resource: huaweicloud.coc-script
+    filters:
+      - script_non_reviewer_filter
+    actions:
+      - type: script_non_reviewer_alarm
+        topic_urn_list:
+          - 'urn:smn:cn-north-4:xxxxx:custodian_test'
+        subject: 'Script Security Non-Compliance Alert'
+        message: 'The following script has been found to lack an assigned reviewer, '
+                 'which constitutes a security non-compliance. Please promptly assign a reviewer.'

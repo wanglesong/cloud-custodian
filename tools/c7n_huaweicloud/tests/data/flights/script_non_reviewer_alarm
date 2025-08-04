@@ -1,0 +1,150 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      Host:
+      - coc.myhuaweicloud.com
+      User-Agent:
+      - huaweicloud-usdk-python/3.0
+      X-Project-Id:
+      - cn-north-4
+      X-Sdk-Date:
+      - 20250320T063810Z
+    method: GET
+    uri: https://coc.myhuaweicloud.com/v1/job/scripts?limit=100
+  response:
+    body:
+      string: '{"data": {"total": 212,"data": [{"id": 26932,"name": "gzz_213546","type": "SHELL","creator": "coc_test",
+                "creator_id": "6baa9982f1f94b018a9dccd34c78a00f","operator": null,"gmt_created": 1753951058991,"gmt_modified": null,
+                "status": "APPROVED","script_uuid": "SC2025073116373801f997f13","usage_count": 0,"properties": {"risk_level": "LOW",
+                "reviewers": [],"version": "1.0.0","protocol": null},"enterprise_project_id": "0","resource_tags": []}]}}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      Date:
+      - Thu, 20 Mar 2025 06:38:10 GMT
+      Server:
+      - api-gateway
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains;
+      X-Content-Type-Options:
+      - nosniff
+      X-Download-Options:
+      - noopen
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Request-Id:
+      - 078d8acc403c245ea4aa7c2d6991fdf3
+      X-XSS-Protection:
+      - 1; mode=block;
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Host:
+      - iam.myhuaweicloud.com
+      User-Agent:
+      - huaweicloud-usdk-python/3.0
+      X-Sdk-Date:
+      - 20250325T134416Z
+    method: GET
+    uri: https://iam.myhuaweicloud.com/v3/auth/domains
+  response:
+    body:
+      string: '{"domains": [{"description":"", "enabled": true, "id":"xxxx", "links":{"self":"xxxx"}, "name": "IAMDomain"}], "links": {"self":"xxxx"}}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      Date:
+      - Tue, 25 Mar 2025 13:44:17 GMT
+      Server:
+      - api-gateway
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains;
+      X-Content-Type-Options:
+      - nosniff
+      X-Download-Options:
+      - noopen
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Request-Id:
+      - e0d285422bbad571cb2704a3dc2cc1af
+      X-XSS-Protection:
+      - 1; mode=block;
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"subject": "Script Security Non-Compliance Alert", "message": "The following script has been found to lack an assigned reviewer, which constitutes a security non-compliance. Please promptly assign a reviewer:\n
+           script_id: string, script_name: string, operator: string, risk_level: string\n"}'
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '242'
+      Content-Type:
+      - application/json;charset=utf-8
+      Host:
+      - smn.ap-southeast-1.myhuaweicloud.com
+      User-Agent:
+      - huaweicloud-usdk-python/3.0
+      X-Project-Id:
+      - ap-southeat-1
+      X-Sdk-Date:
+      - 20250325T143921Z
+    method: POST
+    uri: https://smn.ap-southeast-1.myhuaweicloud.com/v2/ap-southeat-1/notifications/topics/urn%3Asmn%3Acn-north-4%3Ace8476c174f94c6991ea7885e3380d99%3Acustodian_test/publish
+  response:
+    body:
+      string: '{"request_id": "6a63a18b8bab40ffb71ebd9cb80d0085","message_id": "bf94b63a5dfb475994d3ac34664e24f2"}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      Date:
+      - Tue, 25 Mar 2025 14:39:21 GMT
+      Server:
+      - api-gateway
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains;
+      Transfer-Encoding:
+      - chunked
+      X-Content-Type-Options:
+      - nosniff
+      X-Download-Options:
+      - noopen
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Request-Id:
+      - 03a2b9751a165cf6eeafefbf82addde7
+      X-XSS-Protection:
+      - 1; mode=block;
+    status:
+      code: 200
+      message: OK
+version: 1
