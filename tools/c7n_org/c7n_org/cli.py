@@ -34,6 +34,7 @@ from c7n.reports.csvout import Formatter, fs_record_set, record_set, strip_outpu
 from c7n.resources import load_available
 from c7n.utils import (
     CONN_CACHE, dumps, filter_empty, format_string_values, get_policy_provider, join_output_path)
+from c7n_huaweicloud.provider import HuaweiSessionFactory
 
 from c7n_org.utils import environ, account_tags
 
@@ -114,16 +115,31 @@ CONFIG_SCHEMA = {
                 'tags': {'type': 'array', 'items': {'type': 'string'}},
                 'regions': {'type': 'array', 'items': {'type': 'string'}},
                 'vars': {'type': 'object'},
-                }
             }
         },
+        'domain': {
+            'type': 'object',
+            'additionalProperties': True,
+            'required': ['domain_id'],
+            'properties': {
+                'domain_id': {'type': 'string'},
+                'status': {'type': 'string'},
+                'agency_urn': {'type': 'string'},
+                'duration_seconds': {'type': 'integer', 'minimum': 900},
+                'regions': {'type': 'array', 'items': {'type': 'string'}},
+                'tags': {'type': 'object'},
+                'vars': {'type': 'object'},
+            }
+        }
+    },
     'type': 'object',
     'additionalProperties': False,
     'oneOf': [
         {'required': ['accounts']},
         {'required': ['projects']},
         {'required': ['subscriptions']},
-        {'required': ['tenancies']}
+        {'required': ['tenancies']},
+        {'required': ['domains']}
         ],
     'properties': {
         'vars': {'type': 'object'},
@@ -142,8 +158,12 @@ CONFIG_SCHEMA = {
         'tenancies': {
             'type': 'array',
             'items': {'$ref': '#/definitions/tenancy'}
-            }
+        },
+        'domains': {
+            'type': 'array',
+            'items': {'$ref': '#/definitions/domain'}
         }
+    }
 }
 
 
@@ -251,30 +271,39 @@ def comma_expand(values):
 
 
 def get_session(account, session_name, region):
-    if account.get('provider') != 'aws':
-        return None
-    if account.get('role'):
-        roles = account['role']
-        if isinstance(roles, str):
-            roles = [roles]
-        s = None
-        for r in roles:
-            try:
-                s = assumed_session(
-                    r, session_name, region=region,
-                    external_id=account.get('external_id'),
-                    session=s)
-            except ClientError as e:
-                log.error(
-                    "unable to obtain credentials for account:%s role:%s error:%s",
-                    account['name'], r, e)
-                raise
-        return s
-    elif account.get('profile'):
-        return SessionFactory(region, account['profile'])()
+    if account.get('provider') == 'aws':
+        if account.get('role'):
+            roles = account['role']
+            if isinstance(roles, str):
+                roles = [roles]
+            s = None
+            for r in roles:
+                try:
+                    s = assumed_session(
+                        r, session_name, region=region,
+                        external_id=account.get('external_id'),
+                        session=s)
+                except ClientError as e:
+                    log.error(
+                        "unable to obtain credentials for account:%s role:%s error:%s",
+                        account['name'], r, e)
+                    raise
+            return s
+        elif account.get('profile'):
+            return SessionFactory(region, account['profile'])()
+        else:
+            raise ValueError(
+                "No profile or role assume specified for account %s" % account)
+
+    elif account.get('provider') == 'huaweicloud':
+        config = Config.empty(region=region,
+                  agency_urn=account['agency_urn'],
+                  domain_id=account['domain_id'],
+                  name=account['name'],
+                  status=account['status'])
+        return HuaweiSessionFactory(config)()
     else:
-        raise ValueError(
-            "No profile or role assume specified for account %s" % account)
+        return None
 
 
 def filter_accounts(accounts_config, tags, accounts, not_accounts=None):
@@ -475,6 +504,14 @@ def _get_env_creds(account, session, region, env=None):
     elif account["provider"] == 'gcp':
         env['GOOGLE_CLOUD_PROJECT'] = account["account_id"]
         env['CLOUDSDK_CORE_PROJECT'] = account["account_id"]
+    elif account["provider"] == 'huaweicloud':
+        env['HUAWEICLOUD_ACCESS_KEY_ID'] = session.ak
+        env['HUAWEICLOUD_SECRET_ACCESS_KEY'] = session.sk
+        env['HUAWEICLOUD_SECURITY_TOKEN'] = session.token
+        env['HUAWEICLOUD_REGION'] = region
+        env['HUAWEICLOUD_DOMAIN_ID'] = session.domain_id
+        env['HUAWEICLOUD_DOMAIN_NAME'] = session.domain_name
+        env['HUAWEICLOUD_DOMAIN_STATUS'] = session.status
     return filter_empty(env)
 
 
@@ -517,7 +554,7 @@ def run_account_script(account, region, output_dir, debug, script_args):
 @click.option('--serial', default=False, is_flag=True)
 @click.argument('script_args', nargs=-1, type=click.UNPROCESSED)
 def run_script(config, output_dir, accounts, tags, region, echo, serial, script_args):
-    """run an aws/azure/gcp script across accounts"""
+    """run an aws/azure/gcp/HWC script across accounts"""
     # TODO count up on success / error / error list by account
     accounts_config, _, executor = init(
         config, None, serial, True, accounts, tags, (), ())
@@ -600,6 +637,23 @@ def accounts_iterator(config):
              "oci_compartments": a.get("vars", {}).get("oci_compartments"),
              "vars": _update(a.get("vars", {}), org_vars)}
         yield d
+    for a in config.get('domains', ()):
+        if not a['agency_urn'].startswith('iam::'):
+            raise ValueError(f"Invalid agency_urn format in account {a['name']}")
+        if not 900 <= a['duration_seconds'] <= 43200:
+            raise ValueError("duration_seconds must be between 900 and 43200")
+
+        d = {'account_id': a['domain_id'],
+             'domain_id': a['domain_id'],
+             'name': a.get('name', a['domain_id']),
+             'regions': a.get('regions', ['cn-north-4']),
+             "agency_urn": a["agency_urn"],
+             "duration_seconds": a["duration_seconds"],
+             'provider': 'huaweicloud',
+             'status': a.get('status', None),
+             'tags': a.get('tags', ()),
+             'vars': _update(a.get('vars', {}), org_vars)}
+        yield d
 
 
 def _update(old, new):
@@ -643,8 +697,19 @@ def run_account(account, region, policies_config, output_path,
     if account.get("oci_compartments"):
         env_vars.update({"OCI_COMPARTMENTS": account.get("oci_compartments")})
 
+    if account.get('agency_urn'):
+        log.info("Using Huawei Cloud agency: %s", account['agency_urn'])
+        config['agency_urn'] = account['agency_urn']
+        config['duration_seconds'] = account['duration_seconds']
+        config['regions'] = account['regions']
+        config['domain_id'] = account['domain_id']
+        config['name'] = account['name']
+        config['status'] = account['status']
+        config['tags'] = account['tags']
+
     policies = PolicyCollection.from_data(policies_config, config)
     policy_counts = {}
+    failed_policies = []
     success = True
     st = time.time()
 
@@ -660,7 +725,7 @@ def run_account(account, region, policies_config, output_path,
                 p.name, account['name'], region)
             try:
                 resources = p.run()
-                policy_counts[p.name] = resources and len(resources) or 0
+                policy_counts[p.name] = len(resources) if resources else 0
                 if not resources:
                     continue
                 if not config.dryrun and p.execution_mode != 'pull':
@@ -673,16 +738,18 @@ def run_account(account, region, policies_config, output_path,
                     time.time() - st)
             except ClientError as e:
                 success = False
+                failed_policies.append(p.name)
                 if e.response['Error']['Code'] == 'AccessDenied':
                     log.warning('Access denied api:%s policy:%s account:%s region:%s',
                                 e.operation_name, p.name, account['name'], region)
-                    return policy_counts, success
+                    return policy_counts, failed_policies, success
                 log.error(
                     "Exception running policy:%s account:%s region:%s error:%s",
                     p.name, account['name'], region, e)
                 continue
             except Exception as e:
                 success = False
+                failed_policies.append(p.name)  # 新增：记录失败的策略名称
                 log.error(
                     "Exception running policy:%s account:%s region:%s error:%s",
                     p.name, account['name'], region, e)
@@ -693,7 +760,7 @@ def run_account(account, region, policies_config, output_path,
                 pdb.post_mortem(sys.exc_info()[-1])
                 raise
 
-    return policy_counts, success
+    return policy_counts, failed_policies, success
 
 
 def initialize_provider_output(policies_config, output_dir, regions):
@@ -752,7 +819,8 @@ def run(config, use, output_dir, accounts, not_accounts, tags, region,
         )
         return
 
-    policy_counts = Counter()
+    success_policy_counts = Counter()
+    failed_policy_counts = Counter()
     success = True
 
     if metrics_uri:
@@ -790,14 +858,26 @@ def run(config, use, output_dir, accounts, not_accounts, tags, region,
                     a['name'], r, f.exception())
                 continue
 
-            account_region_pcounts, account_region_success = f.result()
-            for p in account_region_pcounts:
-                policy_counts[p] += account_region_pcounts[p]
+            account_success_counts, account_failed_policies, account_region_success = f.result()
+
+            for p_name, count in account_success_counts.items():
+                success_policy_counts[p_name] += count
+
+            for p_name in account_failed_policies:
+                failed_policy_counts[p_name] += 1
 
             if not account_region_success:
                 success = False
 
-    log.info("Policy resource counts %s" % policy_counts)
+    total_success_resources = sum(success_policy_counts.values())
+    total_failed_policies = sum(failed_policy_counts.values())
+
+    log.info("=== Policy Execution Results ===")
+    log.info(f"Successfully executed policies and matched resource counts: "
+             f"{dict(success_policy_counts)}")
+    log.info(f"Total number of successfully matched resources: {total_success_resources}")
+    log.warning(f"Failed policies and their failure counts: {dict(failed_policy_counts)}")
+    log.warning(f"Total number of failed policy executions: {total_failed_policies}")
 
     if not success:
         sys.exit(1)

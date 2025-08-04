@@ -7,6 +7,7 @@ import logging
 from c7n.resolver import ValuesFrom
 from c7n.utils import type_schema, parse_date, local_session
 from c7n.filters import ValueFilter, OPERATORS
+from c7n.exceptions import PolicyExecutionError
 
 from huaweicloudsdkfunctiongraph.v2 import (
     ShowFunctionConfigRequest,
@@ -45,10 +46,19 @@ class FunctionGraph(QueryResourceManager):
             try:
                 response = self.get_client().show_function_config(request)
             except exceptions.ClientRequestException as e:
-                log.error(f'Request[{e.request_id}] failed[{e.status_code}], '
-                          f'error_code[{e.error_code}], '
-                          f'error_msg[{e.error_msg}]')
-                return result
+                log.error(f'Show function config[{resource_id}] failed, '
+                          f'request id:[{e.request_id}], '
+                          f'status code:[{e.status_code}], '
+                          f'error code:[{e.error_code}], '
+                          f'error message:[{e.error_msg}].')
+                if e.status_code == 404:
+                    continue
+                else:
+                    raise PolicyExecutionError(f'Show function config[{resource_id}] failed, '
+                                               f'request id:[{e.request_id}], '
+                                               f'status code:[{e.status_code}], '
+                                               f'error code:[{e.error_code}], '
+                                               f'error message:[{e.error_msg}].')
 
             func_config = eval(str(response).
                                replace('null', 'None').
@@ -110,7 +120,7 @@ class ReservedConcurrency(ValueFilter):
                 response = client.list_reserved_instance_configs(request)
                 reserved_instances = response.reserved_instances
                 if reserved_instances is None:
-                    return r
+                    return None
                 for reserved_instance in reserved_instances:
                     if reserved_instance.function_urn == f'{r["func_urn"]}:{r["version"]}':
                         # change result to Python dict
@@ -120,9 +130,20 @@ class ReservedConcurrency(ValueFilter):
                             replace('false', 'False').
                             replace('true', 'True'))
             except exceptions.ClientRequestException as e:
-                log.error(f'Request[{e.request_id}] failed[{e.status_code}], '
-                          f'error_code[{e.error_code}], '
-                          f'error_msg[{e.error_msg}]')
+                log.error(f'List reserved instance config[{r["func_urn"]}] failed, '
+                          f'request id:[{e.request_id}], '
+                          f'status code:[{e.status_code}], '
+                          f'error code:[{e.error_code}], '
+                          f'error message:[{e.error_msg}].')
+                raise PolicyExecutionError(
+                    f'List reserved instance config[{r["func_urn"]}] failed, '
+                    f'request id:[{e.request_id}], '
+                    f'status code:[{e.status_code}], '
+                    f'error code:[{e.error_code}], '
+                    f'error message:[{e.error_msg}].')
+            except Exception as e:
+                log.error(f'other error, {str(e)}')
+                raise
             return r
 
         with self.executor_factory(max_workers=3) as w:
@@ -175,16 +196,27 @@ class FunctionTrigger(ValueFilter):
                 response = client.list_function_triggers(request)
                 triggers = response.body
                 if triggers is None:
-                    return r
+                    return None
                 # change result to Python dict
                 r[self.annotation_key] = eval(str(triggers).
                                               replace('null', 'None').
                                               replace('false', 'False').
                                               replace('true', 'True'))
             except exceptions.ClientRequestException as e:
-                log.error(f'Request[{e.request_id}] failed[{e.status_code}], '
-                          f'error_code[{e.error_code}], '
-                          f'error_msg[{e.error_msg}]')
+                log.error(f'List function triggers[{r["func_urn"]}] failed, '
+                          f'request id:[{e.request_id}], '
+                          f'status code:[{e.status_code}], '
+                          f'error code:[{e.error_code}], '
+                          f'error message:[{e.error_msg}].')
+                raise PolicyExecutionError(
+                    f'List function triggers[{r["func_urn"]}] failed, '
+                    f'request id:[{e.request_id}], '
+                    f'status code:[{e.status_code}], '
+                    f'error code:[{e.error_code}], '
+                    f'error message:[{e.error_msg}].')
+            except Exception as e:
+                log.error(f'other error, {str(e)}')
+                raise
             return r
 
         with self.executor_factory(max_workers=3) as w:
@@ -212,7 +244,7 @@ class FunctionTrigger(ValueFilter):
 
         # value extract
         # Function triggers in FunctionGraph is list
-        resources_triggers = i.get(self.annotation_key)
+        resources_triggers = i.get(self.annotation_key, [])
 
         # skip value type conversion
         v = self.v
@@ -271,10 +303,16 @@ class DeleteFunction(HuaweiCloudBaseAction):
             _ = client.delete_function(request)
             log.info(f'Function[{resource["func_name"]}] delete success.')
         except exceptions.ClientRequestException as e:
-            log.error(f'Request[{e.request_id}] failed[{e.status_code}], '
-                      f'error_code[{e.error_code}], '
-                      f'error_msg[{e.error_msg}]')
-            return
+            log.error(f'Delete function[{func_urn}] failed, '
+                      f'request id:[{e.request_id}], '
+                      f'status code:[{e.status_code}], '
+                      f'error code:[{e.error_code}], '
+                      f'error message:[{e.error_msg}].')
+            raise PolicyExecutionError(f'Delete function[{func_urn}] failed, '
+                                       f'request id:[{e.request_id}], '
+                                       f'status code:[{e.status_code}], '
+                                       f'error code:[{e.error_code}], '
+                                       f'error message:[{e.error_msg}].')
 
 
 @FunctionGraph.action_registry.register("show-function-config")
@@ -305,10 +343,16 @@ class ShowFunctionConfig(HuaweiCloudBaseAction):
             response = client.show_function_config(request)
             log.info(f'Function[{resource["func_name"]}] configs: {response}.')
         except exceptions.ClientRequestException as e:
-            log.error(f'Request[{e.request_id}] failed[{e.status_code}], '
-                      f'error_code[{e.error_code}], '
-                      f'error_msg[{e.error_msg}]')
-            return
+            log.error(f'Show function config[{resource["func_urn"]}] failed, '
+                      f'request id:[{e.request_id}], '
+                      f'status code:[{e.status_code}], '
+                      f'error code:[{e.error_code}], '
+                      f'error message:[{e.error_msg}].')
+            raise PolicyExecutionError(f'Show function config[{resource["func_urn"]}] failed, '
+                                       f'request id:[{e.request_id}], '
+                                       f'status code:[{e.status_code}], '
+                                       f'error code:[{e.error_code}], '
+                                       f'error message:[{e.error_msg}].')
 
 
 @FunctionGraph.action_registry.register("update-function-config")
@@ -362,10 +406,16 @@ class UpdateFunctionConfig(HuaweiCloudBaseAction):
             response = client.update_function_config(request)
             log.info(f'Function[{resource["func_name"]}] update success, configs: {response}.')
         except exceptions.ClientRequestException as e:
-            log.error(f'Request[{e.request_id}] failed[{e.status_code}], '
-                      f'error_code[{e.error_code}], '
-                      f'error_msg[{e.error_msg}]')
-            return
+            log.error(f'Update function config[{resource["func_urn"]}] failed, '
+                      f'request id:[{e.request_id}], '
+                      f'status code:[{e.status_code}], '
+                      f'error code:[{e.error_code}], '
+                      f'error message:[{e.error_msg}].')
+            raise PolicyExecutionError(f'Update function config[{resource["func_urn"]}] failed, '
+                                       f'request id:[{e.request_id}], '
+                                       f'status code:[{e.status_code}], '
+                                       f'error code:[{e.error_code}], '
+                                       f'error message:[{e.error_msg}].')
 
     def get_request_body(self, resource, client):
         params = self.data.get('properties', {})
@@ -375,10 +425,16 @@ class UpdateFunctionConfig(HuaweiCloudBaseAction):
         try:
             response = client.show_function_config(show_function_config_request)
         except exceptions.ClientRequestException as e:
-            log.error(f'Request[{e.request_id}] failed[{e.status_code}], '
-                      f'error_code[{e.error_code}], '
-                      f'error_msg[{e.error_msg}]')
-            return None
+            log.error(f'Show function config[{resource["func_urn"]}] failed, '
+                      f'request id:[{e.request_id}], '
+                      f'status code:[{e.status_code}], '
+                      f'error code:[{e.error_code}], '
+                      f'error message:[{e.error_msg}].')
+            raise PolicyExecutionError(f'Show function config[{resource["func_urn"]}] failed, '
+                                       f'request id:[{e.request_id}], '
+                                       f'status code:[{e.status_code}], '
+                                       f'error code:[{e.error_code}], '
+                                       f'error message:[{e.error_msg}].')
 
         request_body = UpdateFunctionConfigRequestBody(
             func_name=resource['func_name'],
@@ -430,10 +486,16 @@ class ModifySecurityGroups(UpdateFunctionConfig):
         try:
             response = client.show_function_config(show_function_config_request)
         except exceptions.ClientRequestException as e:
-            log.error(f'Request[{e.request_id}] failed[{e.status_code}], '
-                      f'error_code[{e.error_code}], '
-                      f'error_msg[{e.error_msg}]')
-            return None
+            log.error(f'Show function config[{resource["func_urn"]}] failed, '
+                      f'request id:[{e.request_id}], '
+                      f'status code:[{e.status_code}], '
+                      f'error code:[{e.error_code}], '
+                      f'error message:[{e.error_msg}].')
+            raise PolicyExecutionError(f'Show function config[{resource["func_urn"]}] failed, '
+                                       f'request id:[{e.request_id}], '
+                                       f'status code:[{e.status_code}], '
+                                       f'error code:[{e.error_code}], '
+                                       f'error message:[{e.error_msg}].')
         # Check whether the function has VPC configuration,
         # only vpc function can change security groups.
         if response.func_vpc is None:
@@ -492,10 +554,17 @@ class UpdateFunctionMaxInstanceConfig(HuaweiCloudBaseAction):
             log.info(f'Function[{resource["func_name"]}] update concurrency success, '
                      f'configs: {response}.')
         except exceptions.ClientRequestException as e:
-            log.error(f'Request[{e.request_id}] failed[{e.status_code}], '
-                      f'error_code[{e.error_code}], '
-                      f'error_msg[{e.error_msg}]')
-            return
+            log.error(f'Update function max instance config[{resource["func_urn"]}] failed, '
+                      f'request id:[{e.request_id}], '
+                      f'status code:[{e.status_code}], '
+                      f'error code:[{e.error_code}], '
+                      f'error message:[{e.error_msg}].')
+            raise PolicyExecutionError(
+                f'Update function max instance config[{resource["func_urn"]}] failed, '
+                f'request id:[{e.request_id}], '
+                f'status code:[{e.status_code}], '
+                f'error code:[{e.error_code}], '
+                f'error message:[{e.error_msg}].')
 
 
 @FunctionGraph.action_registry.register("trim-versions")
@@ -531,20 +600,30 @@ class TrimVersions(HuaweiCloudBaseAction):
         try:
             versions = client.list_function_versions(request_for_versions).versions
         except exceptions.ClientRequestException as e:
-            log.error(f'List function[{resource["func_name"]}] versions failed.')
-            log.error(f'Request[{e.request_id}] failed[{e.status_code}], '
-                      f'error_code[{e.error_code}], '
-                      f'error_msg[{e.error_msg}]')
-            return
+            log.error(f'List function[{resource["func_name"]}] versions failed, '
+                      f'request id:[{e.request_id}], '
+                      f'status code:[{e.status_code}], '
+                      f'error code:[{e.error_code}], '
+                      f'error message:[{e.error_msg}].')
+            raise PolicyExecutionError(f'List function[{resource["func_name"]}] versions failed, '
+                                       f'request id:[{e.request_id}], '
+                                       f'status code:[{e.status_code}], '
+                                       f'error code:[{e.error_code}], '
+                                       f'error message:[{e.error_msg}].')
         request_for_aliases = ListVersionAliasesRequest(function_urn=resource["func_urn"])
         try:
             aliases = client.list_version_aliases(request_for_aliases).body
         except exceptions.ClientRequestException as e:
-            log.error(f'List function[{resource["func_name"]}] aliases failed.')
-            log.error(f'Request[{e.request_id}] failed[{e.status_code}], '
-                      f'error_code[{e.error_code}], '
-                      f'error_msg[{e.error_msg}]')
-            return
+            log.error(f'List function[{resource["func_name"]}] aliases failed, '
+                      f'request id:[{e.request_id}], '
+                      f'status code:[{e.status_code}], '
+                      f'error code:[{e.error_code}], '
+                      f'error message:[{e.error_msg}].')
+            raise PolicyExecutionError(f'List function[{resource["func_name"]}] aliases failed, '
+                                       f'request id:[{e.request_id}], '
+                                       f'status code:[{e.status_code}], '
+                                       f'error code:[{e.error_code}], '
+                                       f'error message:[{e.error_msg}].')
         if len(versions) == 1 and versions[0].version == "latest":
             log.warning(f'{resource["func_name"]} only have [latest] version, '
                         f'cannot trim versions.')
@@ -569,10 +648,16 @@ class TrimVersions(HuaweiCloudBaseAction):
             _ = client.delete_function(request)
             log.info(f'{func_urn} deleted.')
         except exceptions.ClientRequestException as e:
-            log.error(f'Request[{e.request_id}] failed[{e.status_code}], '
-                      f'error_code[{e.error_code}], '
-                      f'error_msg[{e.error_msg}]')
-            return
+            log.error(f'Delete function[{func_urn}] failed, '
+                      f'request id:[{e.request_id}], '
+                      f'status code:[{e.status_code}], '
+                      f'error code:[{e.error_code}], '
+                      f'error message:[{e.error_msg}].')
+            raise PolicyExecutionError(f'Delete function[{func_urn}] failed, '
+                                       f'request id:[{e.request_id}], '
+                                       f'status code:[{e.status_code}], '
+                                       f'error code:[{e.error_code}], '
+                                       f'error message:[{e.error_msg}].')
 
     def skip_delete_function_version(self, version, versions_binding_aliases):
         if version.version == 'latest':
@@ -646,10 +731,17 @@ class InvokeFunction(HuaweiCloudBaseAction):
                 log.info(f'Function[{resource["func_name"]}] async invoke success, '
                          f'request id[{response.request_id}]')
             except exceptions.ClientRequestException as e:
-                log.error(f'Request[{e.request_id}] failed[{e.status_code}], '
-                          f'error_code[{e.error_code}], '
-                          f'error_msg[{e.error_msg}]')
-                return
+                log.error(f'Async invoke function[{resource["func_urn"]}] failed, '
+                          f'request id:[{e.request_id}], '
+                          f'status code:[{e.status_code}], '
+                          f'error code:[{e.error_code}], '
+                          f'error message:[{e.error_msg}].')
+                raise PolicyExecutionError(
+                    f'Async invoke function[{resource["func_urn"]}] failed, '
+                    f'request id:[{e.request_id}], '
+                    f'status code:[{e.status_code}], '
+                    f'error code:[{e.error_code}], '
+                    f'error message:[{e.error_msg}].')
         else:
             try:
                 response = client.invoke_function(request)
@@ -662,7 +754,13 @@ class InvokeFunction(HuaweiCloudBaseAction):
                     log.info(f'Function[{resource["func_name"]}] invoke success, '
                              f'request id[{response.x_cff_request_id}]')
             except exceptions.ClientRequestException as e:
-                log.error(f'Request[{e.request_id}] failed[{e.status_code}], '
-                          f'error_code[{e.error_code}], '
-                          f'error_msg[{e.error_msg}]')
-                return
+                log.error(f'Invoke function[{resource["func_urn"]}] failed, '
+                          f'request id:[{e.request_id}], '
+                          f'status code:[{e.status_code}], '
+                          f'error code:[{e.error_code}], '
+                          f'error message:[{e.error_msg}].')
+                raise PolicyExecutionError(f'Invoke function[{resource["func_urn"]}] failed, '
+                                           f'request id:[{e.request_id}], '
+                                           f'status code:[{e.status_code}], '
+                                           f'error code:[{e.error_code}], '
+                                           f'error message:[{e.error_msg}].')

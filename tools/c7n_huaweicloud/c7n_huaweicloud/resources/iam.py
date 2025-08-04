@@ -1,13 +1,10 @@
 import functools
 import json
 import logging
-import os
 
-from huaweicloudsdkcore.auth.credentials import GlobalCredentials
 from huaweicloudsdkcore.exceptions import exceptions
 from huaweicloudsdkiam.v3 import (UpdateLoginProtectRequest, UpdateLoginProjectReq,
-    IamClient as IamClientV3, ShowUserLoginProtectRequest, UpdateLoginProject)
-from huaweicloudsdkiam.v3.region import iam_region as iam_region_v3
+    ShowUserLoginProtectRequest, UpdateLoginProject)
 from huaweicloudsdkiam.v5 import (DeletePolicyV5Request, ListAttachedUserPoliciesV5Request,
     DetachUserPolicyV5Request, DetachUserPolicyReqBody, DeleteUserV5Request,
     AddUserToGroupV5Request, AddUserToGroupReqBody, RemoveUserFromGroupV5Request,
@@ -16,10 +13,10 @@ from huaweicloudsdkiam.v5 import (DeletePolicyV5Request, ListAttachedUserPolicie
     GetPolicyVersionV5Request)
 
 from c7n.filters import ValueFilter
-from c7n.utils import type_schema, chunks
-from tools.c7n_huaweicloud.c7n_huaweicloud.actions import HuaweiCloudBaseAction
-from tools.c7n_huaweicloud.c7n_huaweicloud.provider import resources
-from tools.c7n_huaweicloud.c7n_huaweicloud.query import QueryResourceManager, TypeInfo
+from c7n.utils import type_schema, chunks, local_session
+from c7n_huaweicloud.actions import HuaweiCloudBaseAction
+from c7n_huaweicloud.provider import resources
+from c7n_huaweicloud.query import QueryResourceManager, TypeInfo
 
 log = logging.getLogger("custodian.huaweicloud.resources.iam")
 
@@ -65,15 +62,13 @@ class PolicyDelete(HuaweiCloudBaseAction):
         try:
             if resource['policy_type'] == 'custom':
                 client.delete_policy_v5(DeletePolicyV5Request(policy_id=resource['policy_id']))
-                print(f"Successfully detached policy: {resource['policy_id']}")
+                log.info(f"Successfully detached policy: {resource['policy_id']}")
         except exceptions.ClientRequestException as e:
-            print(f"Failed detached policy: {resource['policy_id']}")
-            print(e.status_code)
-            print(e.request_id)
-            print(e.error_code)
-            print(e.error_msg)
+            log.error(f"Failed detached policy: {resource['policy_id']},"
+                      f" status_code:{e.status_code}, request_id:{e.request_id},"
+                      f" error_code:{e.error_code}, error_msg:{e.error_msg}")
         except Exception as e:
-            print(f"Unexpected error: {e}")
+            log.error(f"Unexpected error: {e}")
 
 
 @User.action_registry.register('delete')
@@ -103,6 +98,9 @@ class UserDelete(HuaweiCloudBaseAction):
     schema = type_schema('delete')
 
     def perform_action(self, resource):
+        if resource["is_root_user"]:
+            log.warning("Root user is not delete.")
+            return
         client = self.manager.get_client()
         try:
             request = ListAttachedUserPoliciesV5Request(
@@ -115,30 +113,27 @@ class UserDelete(HuaweiCloudBaseAction):
                     request = DetachUserPolicyV5Request(policy_id=policy_id)
                     request.body = DetachUserPolicyReqBody(user_id=resource["id"])
                     client.detach_user_policy_v5(request)
-                    print(f"Successfully detached policy: {policy_id}")
+                    log.info(f"Successfully detached policy: {policy_id}")
                 except exceptions.ClientRequestException as e:
-                    print(f"Failed to detach policy {policy_id}: {e.error_msg}")
+                    log.error(f"Failed to detach policy {policy_id}: {e.error_msg}")
 
             request = DeleteUserV5Request(user_id=resource["id"])
             response = client.delete_user_v5(request)
             if response.status_code == 204:
-                print(f"Successfully deleted user: {resource['id']}")
+                log.info(f"Successfully deleted user: {resource['id']}")
             else:
-                print(f"Failed to delete user: {resource['id']}. "
+                log.error(f"Failed to delete user: {resource['id']}. "
                       f"Status code: {response.status_code}")
-
         except exceptions.ClientRequestException as e:
-            print(e.status_code)
-            print(e.request_id)
-            print(e.error_code)
-            print(e.error_msg)
+            log.error(f"status_code:{e.status_code}, request_id:{e.request_id},"
+                      f" error_code:{e.error_code}, error_msg:{e.error_msg}")
         except Exception as e:
-            print(f"Unexpected error: {e}")
+            log.error(f"Unexpected error: {e}")
 
 
 @User.action_registry.register('set-group')
 class SetGroup(HuaweiCloudBaseAction):
-    """Delete a user.
+    """Set user to group.
 
     :Example:
 
@@ -179,24 +174,22 @@ class SetGroup(HuaweiCloudBaseAction):
                 request = AddUserToGroupV5Request(group_id=group_id)
                 request.body = AddUserToGroupReqBody(user_id=user_id)
                 client.add_user_to_group_v5(request)
-                print(f"add user to group success, user id: {user_id}")
+                log.info(f"add user to group success, user id: {user_id}")
             elif state == 'remove':
                 request = RemoveUserFromGroupV5Request(group_id=group_id)
                 request.body = RemoveUserFromGroupReqBody(user_id=user_id)
                 client.remove_user_from_group_v5(request)
-                print(f"remove user from group success, user id: {user_id}")
+                log.info(f"remove user from group success, user id: {user_id}")
         except exceptions.ClientRequestException as e:
-            print(e.status_code)
-            print(e.request_id)
-            print(e.error_code)
-            print(e.error_msg)
+            log.error(f"status_code:{e.status_code}, request_id:{e.request_id},"
+                      f" error_code:{e.error_code}, error_msg:{e.error_msg}")
         except Exception as e:
-            print(f"Unexpected error: {e}")
+            log.error(f"Unexpected error: {e}")
 
 
 @User.action_registry.register('remove-access-key')
 class UserRemoveAccessKey(HuaweiCloudBaseAction):
-    """Delete a user.
+    """Remove user's access-key or disable user's access-key.
 
     :Example:
 
@@ -234,20 +227,18 @@ class UserRemoveAccessKey(HuaweiCloudBaseAction):
                     request.body = UpdateAccessKeyReqBody(
                         status=AccessKeyStatus.INACTIVE)
                     client.update_access_key_v5(request)
-                    print(f"disable access key success, access key id: {key['access_key_id']}")
+                    log.info(f"disable access key success, access key id: {key['access_key_id']}")
                 else:
                     request = DeleteAccessKeyV5Request(
                         user_id=resource["id"],
                         access_key_id=key['access_key_id'])
                     client.delete_access_key_v5(request)
-                    print(f"delete access key success, access key id: {key['access_key_id']}")
+                    log.info(f"delete access key success, access key id: {key['access_key_id']}")
         except exceptions.ClientRequestException as e:
-            print(e.status_code)
-            print(e.request_id)
-            print(e.error_code)
-            print(e.error_msg)
+            log.error(f"status_code:{e.status_code}, request_id:{e.request_id},"
+                      f" error_code:{e.error_code}, error_msg:{e.error_msg}")
         except Exception as e:
-            print(f"Unexpected error: {e}")
+            log.error(f"Unexpected error: {e}")
 
 
 @User.action_registry.register('set-login-protect')
@@ -279,16 +270,11 @@ class SetLoginProtect(HuaweiCloudBaseAction):
     schema = type_schema(
         'set-login-protect',
         enabled={'type': 'boolean'},
-        verification_method={'enum': ['vmfa', 'sms', 'email']},
+        verification_method={'type': 'string'},
     )
 
     def perform_action(self, resource):
-        globalCredentials = GlobalCredentials(
-            os.getenv('HUAWEI_ACCESS_KEY_ID'), os.getenv('HUAWEI_SECRET_ACCESS_KEY'))
-        client = IamClientV3.new_builder() \
-            .with_credentials(globalCredentials) \
-            .with_region(iam_region_v3.IamRegion.value_of(os.getenv('HUAWEI_DEFAULT_REGION'))) \
-            .build()
+        client = local_session(self.manager.session_factory).client("iam-v3")
         try:
             request = UpdateLoginProtectRequest(user_id=resource["id"])
 
@@ -299,14 +285,12 @@ class SetLoginProtect(HuaweiCloudBaseAction):
             request.body = UpdateLoginProjectReq(login_protect=loginProtectBody)
 
             response = client.update_login_protect(request)
-            print(response)
+            log.info(response)
         except exceptions.ClientRequestException as e:
-            print(e.status_code)
-            print(e.request_id)
-            print(e.error_code)
-            print(e.error_msg)
+            log.error(f"status_code:{e.status_code}, request_id:{e.request_id},"
+                      f" error_code:{e.error_code}, error_msg:{e.error_msg}")
         except Exception as e:
-            print(f"Unexpected error: {e}")
+            log.error(f"Unexpected error: {e}")
 
 
 """------------------------------------filter---------------------------------------"""
@@ -334,38 +318,30 @@ class UserLoginProtect(ValueFilter):
                 verification_method: vmfa
     """
 
-    schema = type_schema('login-protect', rinherit=ValueFilter.schema)
+    schema = type_schema('login-protect',
+                         key={'enum': ['enabled', 'verification_method']})
     annotation_key = 'login_protect'
     matched_annotation_key = 'c7n:matched_login_protect'
     schema_alias = False
 
     def _user_login_protect(self, resource):
         try:
-            globalCredentials = GlobalCredentials(os.getenv('HUAWEI_ACCESS_KEY_ID'),
-                                                  os.getenv('HUAWEI_SECRET_ACCESS_KEY'))
-            client = IamClientV3.new_builder() \
-                .with_credentials(globalCredentials) \
-                .with_region(iam_region_v3.IamRegion.value_of(
-                os.getenv('HUAWEI_DEFAULT_REGION'))) \
-                .build()
+            client = local_session(self.manager.session_factory).client("iam-v3")
             request = ShowUserLoginProtectRequest(user_id=resource["id"])
             response = client.show_user_login_protect(request)
             login_protect = response.login_protect
             resource[self.annotation_key] = {
                 'verification_method': login_protect.verification_method,
-                'user_id': login_protect.user_id,
                 'enabled': login_protect.enabled
             }
         except exceptions.ClientRequestException as e:
             if not (e.status_code == 404 and e.error_code == 'IAM.0004'):
-                print(e.status_code)
-                print(e.request_id)
-                print(e.error_code)
-                print(e.error_msg)
+                log.error(f"status_code:{e.status_code}, request_id:{e.request_id},"
+                          f" error_code:{e.error_code}, error_msg:{e.error_msg}")
                 resource[self.annotation_key] = {}
         except Exception as e:
             resource[self.annotation_key] = {}
-            print(f"Unexpected error: {e}")
+            log.error(f"Unexpected error: {e}")
 
     def process(self, resources, event=None):
         matched = []
@@ -386,12 +362,10 @@ class UserLoginProtect(ValueFilter):
                         self.merge_annotation(user, self.matched_annotation_key, login_protect)
                         matched.append(user)
         except exceptions.ClientRequestException as e:
-            print(e.status_code)
-            print(e.request_id)
-            print(e.error_code)
-            print(e.error_msg)
+            log.error(f"status_code:{e.status_code}, request_id:{e.request_id},"
+                      f" error_code:{e.error_code}, error_msg:{e.error_msg}")
         except Exception as e:
-            print(f"Unexpected error: {e}")
+            log.error(f"Unexpected error: {e}")
         return matched or []
 
 
@@ -413,7 +387,8 @@ class UserMfaDevice(ValueFilter):
                 value: true
     """
 
-    schema = type_schema('mfa-device', rinherit=ValueFilter.schema)
+    schema = type_schema('mfa-device',
+                         key={'enum': ['enabled', 'serial_number']})
     annotation_key = 'mfa_devices'
     matched_annotation_key = 'c7n:matched_mfa_devices'
     schema_alias = False
@@ -426,7 +401,6 @@ class UserMfaDevice(ValueFilter):
             resource[self.annotation_key] = [
                 {
                     'serial_number': mfa.serial_number,
-                    'user_id': mfa.user_id,
                     'enabled': mfa.enabled
                 }
                 for mfa in mfa_devices
@@ -455,12 +429,10 @@ class UserMfaDevice(ValueFilter):
                     if matched_devices:
                         matched.append(user)
         except exceptions.ClientRequestException as e:
-            print(e.status_code)
-            print(e.request_id)
-            print(e.error_code)
-            print(e.error_msg)
+            log.error(f"status_code:{e.status_code}, request_id:{e.request_id},"
+                      f" error_code:{e.error_code}, error_msg:{e.error_msg}")
         except Exception as e:
-            print(f"Unexpected error: {e}")
+            log.error(f"Unexpected error: {e}")
         return matched or []
 
 
@@ -480,7 +452,8 @@ class UserPolicy(ValueFilter):
                 key: Policy_id
                 value: xxxx
     """
-    schema = type_schema('policy', rinherit=ValueFilter.schema)
+    schema = type_schema('policy',
+                         key={'enum': ['policy_name', 'policy_id', 'urn', 'attached_at']})
     annotation_key = 'attached_policies'
     matched_annotation_key = 'c7n:matched_attached_policies'
     schema_alias = False
@@ -568,9 +541,8 @@ class UserAccessKey(ValueFilter):
                 value: 1
     """
 
-    schema = type_schema(
-        'access-key',
-        rinherit=ValueFilter.schema)
+    schema = type_schema('access-key',
+                         key={'enum': ['access_key_id', 'status', 'created_at']})
     schema_alias = False
     annotation_key = 'access_keys'
     matched_annotation_key = 'c7n:matched_keys'
@@ -665,40 +637,39 @@ class AllowAllIamPolicies(ValueFilter):
     schema = type_schema('has-allow-all')
 
     def has_allow_all_policy(self, client, resource):
-        if resource['policy_type'] == 'custom':
-            document = client.get_policy_version_v5(GetPolicyVersionV5Request(
-                policy_id=resource.get('policy_id'),
-                version_id=resource.get('default_version_id'))
-            ).policy_version.document
+        document = client.get_policy_version_v5(GetPolicyVersionV5Request(
+            policy_id=resource.get('policy_id'),
+            version_id=resource.get('default_version_id'))
+        ).policy_version.document
 
-            statements = json.loads(document).get('Statement')
-            if isinstance(statements, dict):
-                statements = [statements]
+        statements = json.loads(document).get('Statement')
+        if isinstance(statements, dict):
+            statements = [statements]
 
-            for s in statements:
-                if ('Condition' not in s and
-                        'NotResource' not in s and
-                        'Action' in s and
-                        isinstance(s['Action'], list) and
-                        ("*" in s['Action'] or
-                         "*:*:*" in s['Action']) and
-                        ('Resource' not in s or
-                         'Resource' in s and
-                         isinstance(s['Resource'], list) and
-                         "*" in s['Resource'] or
-                         "*:*:*:*:*" in s['Resource']) and
-                        s['Effect'] == "Allow"):
-                    return True
-            return False
+        for s in statements:
+            if ('Condition' not in s and
+                    'NotResource' not in s and
+                    'Action' in s and
+                    isinstance(s['Action'], list) and
+                    ("*" in s['Action'] or
+                     "*:*:*" in s['Action']) and
+                    ('Resource' not in s or
+                     'Resource' in s and
+                     isinstance(s['Resource'], list) and
+                     "*" in s['Resource'] or
+                     "*:*:*:*:*" in s['Resource']) and
+                    s['Effect'] == "Allow"):
+                return True
+        return False
 
     def process(self, resources, event=None):
         client = self.manager.get_client()
         results = [r for r in resources if self.has_allow_all_policy(client, r)]
         self.log.info(
-            "%d of %d iam policies have allow all.",
+            "%s of %s iam policies have allow all.",
             len(results), len(resources))
         for res in results:
-            self.log.info("allow all iam policy id: %d", res['policy_id'])
+            self.log.info("allow all iam policy id: %s", res['policy_id'])
         return results
 
 
