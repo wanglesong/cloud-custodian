@@ -1,0 +1,25 @@
+policies:
+  - name: script-non-reviewer-alarm
+    resource: huaweicloud.coc-script
+    mode:   #为策略文件创建FunctionGraph函数
+      type: huaweicloud-periodic      #周期性执行
+      xrole: CustodianExecutionForFunctionAgency       #给FG函数配置运行时的委托策略
+      enable_lts_log: true      #给FG函数配置：打开LTS日志
+      log_level: INFO     #给FG函数配置：日志级别为INFO
+      user_data_encrypt_kms_key_id: "b801faad-90b2-4532-98c6-531823175448"       #给FG函数配置：代码加密秘钥
+      code_encrypt_kms_key_id: "b801faad-90b2-4532-98c6-531823175448"     #给FG函数配置：环境变量加密秘钥
+      func_vpc:      #给FG函数配置VPC：vpc, subnet, cidr
+        vpc_name: "vpc-default"
+        subnet_name: "subnet-default"
+        cidr: "192.168.0.0/24"
+      schedule: "0 55 23 * * *"      #设置周期运行的定时任务：每天23点55分执行
+      schedule_type: Cron
+      cron_tz: "America/Sao_Paulo"
+    filters:
+      - script_non_reviewer_filter
+    actions:
+      - type: script_non_reviewer_alarm
+        topic_urn_list:
+          - 'urn:smn:cn-north-4:ce8476c174f94c6991ea7885e3380d99:itau'
+        subject: 'Script Security Non-Compliance Alert'
+        message: 'The following script has been found to lack an assigned reviewer, which constitutes a security non-compliance. Please promptly assign a reviewer.'
