@@ -684,7 +684,7 @@ class Session:
             request = ListSharesRequest()
         elif service == "coc-patch":
             request = ListInstanceCompliantRequest()
-        elif service == "coc-script":
+        elif service == "coc-script_v2":
             request = ListScriptsRequest()
         elif service == "ram":
             request = SearchResourceShareAssociationsRequest()
