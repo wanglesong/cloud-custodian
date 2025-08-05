@@ -140,16 +140,12 @@ class ScriptNonReviewerFilter(Filter):
             return resources
         filter_resources = []
         for resource in resources:
-            script_list = resource.get('data', [])
-            if len(script_list) == 0:
+            properties = resource.get('properties', None)
+            if not properties:
                 continue
-            for script in script_list:
-                properties = script.get('properties', None)
-                if not properties:
-                    continue
-                reviewers = properties.get('reviewers', [])
-                if len(reviewers) == 0:
-                    filter_resources.append(script)
+            reviewers = properties.get('reviewers', [])
+            if len(reviewers) == 0:
+                filter_resources.append(resource)
         return filter_resources
 
 

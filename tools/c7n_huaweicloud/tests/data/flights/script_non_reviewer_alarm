@@ -22,10 +22,81 @@ interactions:
     uri: https://coc.myhuaweicloud.com/v1/job/scripts?limit=100
   response:
     body:
-      string: '{"data": {"total": 212,"data": [{"id": 26932,"name": "gzz_213546","type": "SHELL","creator": "coc_test",
-                "creator_id": "6baa9982f1f94b018a9dccd34c78a00f","operator": null,"gmt_created": 1753951058991,"gmt_modified": null,
-                "status": "APPROVED","script_uuid": "SC2025073116373801f997f13","usage_count": 0,"properties": {"risk_level": "LOW",
-                "reviewers": [],"version": "1.0.0","protocol": null},"enterprise_project_id": "0","resource_tags": []}]}}'
+      string: '{
+ "data": {
+  "total": 212,
+  "data": [
+   {
+    "id": 26932,
+    "name": "gzz_213546",
+    "type": "SHELL",
+    "creator": "coc_test",
+    "creator_id": "6baa9982f1f94b018a9dccd34c78a00f",
+    "operator": null,
+    "gmt_created": 1753951058991,
+    "gmt_modified": null,
+    "status": "APPROVED",
+    "script_uuid": "SC2025073116373801f997f13",
+    "usage_count": 0,
+    "properties": {
+     "risk_level": "LOW",
+     "reviewers": [],
+     "version": "1.0.0",
+     "protocol": null
+    },
+    "enterprise_project_id": "0",
+    "resource_tags": []
+   },
+   {
+    "id": 26464,
+    "name": "cfm-test-0726001",
+    "type": "SHELL",
+    "creator": "coc_test",
+    "creator_id": "6baa9982f1f94b018a9dccd34c78a00f",
+    "operator": "coc-platform",
+    "gmt_created": 1753496674889,
+    "gmt_modified": 1753794061160,
+    "status": "APPROVED",
+    "script_uuid": "SC20250726102434010609b5e",
+    "usage_count": 0,
+    "properties": {
+     "risk_level": "LOW",
+     "reviewers": [],
+     "version": "1.0.0",
+     "protocol": null
+    },
+    "enterprise_project_id": "0",
+    "resource_tags": []
+   },
+   {
+    "id": 24703,
+    "name": "sp2020",
+    "type": "SHELL",
+    "creator": "dusiyu",
+    "creator_id": "99336f5c-1a57-4173-9ef9-67b1032c66a7",
+    "operator": "dusiyu",
+    "gmt_created": 1752754878263,
+    "gmt_modified": 1752755026992,
+    "status": "APPROVED",
+    "script_uuid": "SC2025071720211801ba2b0fe",
+    "usage_count": 0,
+    "properties": {
+     "risk_level": "MEDIUM",
+     "reviewers": [
+      {
+       "reviewer_name": "coc-test-E",
+       "reviewer_id": "1682f14f71e245e686ffa080e1147799"
+      }
+     ],
+     "version": "1.0.0",
+     "protocol": null
+    },
+    "enterprise_project_id": "0",
+    "resource_tags": []
+   }
+  ]
+ }
+}'
     headers:
       Connection:
       - keep-alive
