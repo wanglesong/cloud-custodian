@@ -59,6 +59,36 @@ class CocAlarmTest(BaseTest):
         p = self.load_policy({
             "name": "script_non_reviewer_alarm",
             "resource": "huaweicloud.coc-script",
+            'filters': ["script_non_reviewer_filter"],
+            "actions": [{
+                "type": "script_non_reviewer_alarm",
+                "topic_urn_list": ["urn:smn:region:account-id:topic-name"],
+                "subject": "Script Security Non-Compliance Alert",
+                "message": "The following script has been found to lack an assigned reviewer"
+            }]
+        },
+            session_factory=factory)
+        resources = p.run()
+        self.assertEqual(len(resources), 2)
+        self.assertEqual(resources[0]["name"], "gzz_213546")
+
+    def test_script_non_reviewer_query1(self):
+        factory = self.replay_flight_data('script_non_reviewer_alarm')
+        p = self.load_policy({
+            "name": "script_non_reviewer_alarm",
+            "resource": "huaweicloud.coc-script",
+            'filters': [
+                {
+                    'type': 'value',
+                    'key': 'properties.reviewers',
+                    'value': []
+                },
+                {
+                    'type': 'value',
+                    'key': 'properties.risk_level',
+                    'value': 'MEDIUM'
+                }
+            ],
             "actions": [{
                 "type": "script_non_reviewer_alarm",
                 "topic_urn_list": ["urn:smn:region:account-id:topic-name"],
@@ -69,4 +99,4 @@ class CocAlarmTest(BaseTest):
             session_factory=factory)
         resources = p.run()
         self.assertEqual(len(resources), 1)
-        self.assertEqual(resources[0]["name"], "gzz_213546")
+        self.assertEqual(resources[0]["name"], "cfm-test-0726001")

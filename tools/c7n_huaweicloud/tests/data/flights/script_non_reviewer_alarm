@@ -22,10 +22,7 @@ interactions:
     uri: https://coc.myhuaweicloud.com/v1/job/scripts?limit=100
   response:
     body:
-      string: '{
- "data": {
-  "total": 212,
-  "data": [
+      string: '{"data": {"total": 212,"data": [
    {
     "id": 26932,
     "name": "gzz_213546",
@@ -60,7 +57,7 @@ interactions:
     "script_uuid": "SC20250726102434010609b5e",
     "usage_count": 0,
     "properties": {
-     "risk_level": "LOW",
+     "risk_level": "MEDIUM",
      "reviewers": [],
      "version": "1.0.0",
      "protocol": null
@@ -188,7 +185,7 @@ interactions:
       X-Sdk-Date:
       - 20250325T143921Z
     method: POST
-    uri: https://smn.ap-southeast-1.myhuaweicloud.com/v2/ap-southeat-1/notifications/topics/urn%3Asmn%3Acn-north-4%3Ace8476c174f94c6991ea7885e3380d99%3Acustodian_test/publish
+    uri: https://smn.cn-north-4.myhuaweicloud.com/v2/account-id/notifications/topics/urn%3Asmn%3Aregion%3Aaccount-id%3Atopic-name/publish
   response:
     body:
       string: '{"request_id": "6a63a18b8bab40ffb71ebd9cb80d0085","message_id": "bf94b63a5dfb475994d3ac34664e24f2"}'
