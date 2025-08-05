@@ -83,7 +83,7 @@ from huaweicloudsdkcts.v3.region.cts_region import CtsRegion
 from huaweicloudsdkcbr.v1 import ListBackupsRequest, ListVaultRequest, ListProtectableRequest
 from huaweicloudsdksfsturbo.v1 import SFSTurboClient, ListSharesRequest
 from huaweicloudsdksfsturbo.v1.region.sfsturbo_region import SFSTurboRegion
-from huaweicloudsdkcoc.v1 import CocClient, ListInstanceCompliantRequest, ListScriptsResponse
+from huaweicloudsdkcoc.v1 import CocClient, ListInstanceCompliantRequest, ListScriptsRequest
 from huaweicloudsdkcoc.v1.region.coc_region import CocRegion
 from huaweicloudsdkorganizations.v1 import (
     OrganizationsClient,
@@ -438,7 +438,7 @@ class Session:
                 .with_region(CbrRegion.value_of(self.region))
                 .build()
             )
-        elif service == "coc":
+        elif service == "coc" or service in ['coc-patch', 'coc-script_v2']:
             client = (
                 CocClient.new_builder()
                 .with_credentials(globalCredentials)
@@ -685,7 +685,7 @@ class Session:
         elif service == "coc-patch":
             request = ListInstanceCompliantRequest()
         elif service == "coc-script":
-            request = ListScriptsResponse()
+            request = ListScriptsRequest()
         elif service == "ram":
             request = SearchResourceShareAssociationsRequest()
             request.body = SearchResourceShareAssociationsReqBody(

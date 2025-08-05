@@ -18,7 +18,7 @@ log = logging.getLogger("custodian.huaweicloud.resources.coc")
 @resources.register('coc-patch')
 class CocPatch(QueryResourceManager):
     class resource_type(TypeInfo):
-        service = 'coc'
+        service = 'coc-patch'
         enum_spec = ('list_instance_compliant', 'instance_compliant', 'offset')
         id = 'id'
         offset_start_num = 1
@@ -106,18 +106,20 @@ class PatchNonCompliantAlarm(HuaweiCloudBaseAction):
                           f"send message to {topic_urn} failed: {e.error_msg}")
                 raise e
 
+    def perform_action(self, resource):
+        return super().perform_action(resource)
+
 
 @resources.register('coc-script')
 class CocScript(QueryResourceManager):
     class resource_type(TypeInfo):
-        service = 'coc'
-        enum_spec = ('list_scripts', 'data', 'marker')
+        service = 'coc-script_v2'
+        enum_spec = ('list_scripts', 'data.data', 'marker')
         id = 'id'
-        offset_start_num = 1
         tag_resource_type = None
 
 
-@CocScript.filter_registry.register("script_non_reviewer")
+@CocScript.filter_registry.register("script_non_reviewer_filter")
 class ScriptNonReviewerFilter(Filter):
     """Check if a script does not have an assigned reviewer.
 
@@ -227,3 +229,6 @@ class ScriptNonReviewerAlarm(HuaweiCloudBaseAction):
                 log.error("[actions]-[script_non_reviewer_alarm]-The resource:[coc-script] "
                           f"send message to {topic_urn} failed: {e.error_msg}")
                 raise e
+
+    def perform_action(self, resource):
+        return super().perform_action(resource)
