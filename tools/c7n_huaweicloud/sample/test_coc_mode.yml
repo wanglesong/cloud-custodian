@@ -1,18 +1,18 @@
 policies:
   - name: script-non-reviewer-alarm
     resource: huaweicloud.coc-script
-    mode:   #为策略文件创建FunctionGraph函数
-      type: huaweicloud-periodic      #周期性执行
-      xrole: CustodianExecutionForFunctionAgency       #给FG函数配置运行时的委托策略
-      enable_lts_log: true      #给FG函数配置：打开LTS日志
-      log_level: INFO     #给FG函数配置：日志级别为INFO
-      user_data_encrypt_kms_key_id: "b801faad-90b2-4532-98c6-531823175448"       #给FG函数配置：代码加密秘钥
-      code_encrypt_kms_key_id: "b801faad-90b2-4532-98c6-531823175448"     #给FG函数配置：环境变量加密秘钥
-      func_vpc:      #给FG函数配置VPC：vpc, subnet, cidr
+    mode:
+      type: huaweicloud-periodic
+      xrole: CustodianExecutionForFunctionAgency
+      enable_lts_log: true
+      log_level: INFO
+      user_data_encrypt_kms_key_id: ""
+      code_encrypt_kms_key_id: ""
+      func_vpc:
         vpc_name: "vpc-default"
         subnet_name: "subnet-default"
         cidr: "192.168.0.0/24"
-      schedule: "0 55 23 * * *"      #设置周期运行的定时任务：每天23点55分执行
+      schedule: "0 55 23 * * *"
       schedule_type: Cron
       cron_tz: "America/Sao_Paulo"
     filters:

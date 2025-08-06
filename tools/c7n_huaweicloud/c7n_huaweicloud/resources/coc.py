@@ -22,7 +22,7 @@ class CocPatch(QueryResourceManager):
         enum_spec = ('list_instance_compliant', 'instance_compliant', 'offset')
         id = 'id'
         offset_start_num = 1
-        tag_resource_type = None
+        tag_resource_type = 'patch'
 
 
 @CocPatch.action_registry.register("patch_non_compliant_alarm")
@@ -123,7 +123,7 @@ class CocScript(QueryResourceManager):
         service = 'coc-script_v2'
         enum_spec = ('list_scripts', 'data.data', 'marker')
         id = 'id'
-        tag_resource_type = None
+        tag_resource_type = 'script'
 
 
 @CocScript.filter_registry.register("script_non_reviewer_filter")
