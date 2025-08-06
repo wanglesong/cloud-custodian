@@ -201,7 +201,7 @@ class ScriptNonReviewerAlarm(HuaweiCloudBaseAction):
         subject = self.data.get('subject', 'Script Security Non Compliance Alert')
         message = self.data.get('message', 'The following script has been found to lack an assigned reviewer, '
                                            'which constitutes a security non-compliance.\n'
-                                           'Please promptly assign a reviewer. Script list:\n')
+                                           'Please promptly assign a reviewer. Script list:')
 
         if len(topic_urn_list) < 1:
             raise PolicyValidationError("Can not create smn alarm message when parameter:topic_urn is None.")
