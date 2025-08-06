@@ -75,8 +75,8 @@ class PatchNonCompliantAlarm(HuaweiCloudBaseAction):
 
         topic_urn_list = self.data.get('topic_urn_list', [])
         subject = self.data.get('subject', 'Patch Security Non-Compliance Alert')
-        message = self.data.get('message', 'Incompliant patches are detected on the following hosts, '
-                                           'Repair the patches in time.')
+        message = self.data.get('message', 'Non-Compliance patches are detected on the following hosts, '
+                                           'Please Repair the patches in time. Ecs host list:\n')
 
         if len(topic_urn_list) < 1:
             raise PolicyValidationError("Can not create smn alarm message when parameter:topic_urn is None.")
