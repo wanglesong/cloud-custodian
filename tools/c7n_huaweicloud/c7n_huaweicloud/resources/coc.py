@@ -90,6 +90,7 @@ class PatchNonCompliantAlarm(HuaweiCloudBaseAction):
             patch_non_compliant_data = (f'ecs_name: {ecs_name}, ecs_instance_id: {ecs_instance_id}, '
                                         f'region: {region}, non_compliant_count: {non_compliant_count}')
 
+        results = []
         for topic_urn in topic_urn_list:
             client = local_session(self.manager.session_factory).client('smn')
             message_body = PublishMessageRequestBody(
@@ -99,12 +100,18 @@ class PatchNonCompliantAlarm(HuaweiCloudBaseAction):
             request = PublishMessageRequest(topic_urn=topic_urn, body=message_body)
             try:
                 response = client.publish_message(request)
+                results.append({
+                    'status': 'success',
+                    'topic_urn': topic_urn,
+                    'message_id': getattr(response, 'message_id', None)
+                })
                 log.info("[actions]-[patch_non_compliant_alarm]-The resource:[coc-patch] "
-                         f"send message to {topic_urn} has succeeded, the smn message id: {response.message_id}.")
+                         f"send message to {topic_urn} has succeeded.")
             except exceptions.ClientRequestException as e:
                 log.error("[actions]-[patch_non_compliant_alarm]-The resource:[coc-patch] "
-                          f"send message to {topic_urn} failed: {e.error_msg}")
+                          f"send message to {topic_urn} failed. cause: {e.error_msg}")
                 raise e
+        return results
 
     def perform_action(self, resource):
         return super().perform_action(resource)
@@ -210,6 +217,7 @@ class ScriptNonReviewerAlarm(HuaweiCloudBaseAction):
             script_non_reviewer_data += (f'script_id: {script_id}, script_name: {script_name}, operator: {operator}, '
                                          f'risk_level: {risk_level}\n')
 
+        results = []
         for topic_urn in topic_urn_list:
             client = local_session(self.manager.session_factory).client('smn')
             message_body = PublishMessageRequestBody(
@@ -219,12 +227,18 @@ class ScriptNonReviewerAlarm(HuaweiCloudBaseAction):
             request = PublishMessageRequest(topic_urn=topic_urn, body=message_body)
             try:
                 response = client.publish_message(request)
+                results.append({
+                    'status': 'success',
+                    'topic_urn': topic_urn,
+                    'message_id': getattr(response, 'message_id', None)
+                })
                 log.info("[actions]-[script_non_reviewer_alarm]-The resource:[coc-script] "
-                         f"send message to {topic_urn} has succeeded, the smn message id: {response.message_id}.")
+                         f"send message to {topic_urn} has succeeded.")
             except exceptions.ClientRequestException as e:
                 log.error("[actions]-[script_non_reviewer_alarm]-The resource:[coc-script] "
-                          f"send message to {topic_urn} failed: {e.error_msg}")
+                          f"send message to {topic_urn} failed. cause: {e.error_msg}")
                 raise e
+        return results
 
     def perform_action(self, resource):
         return super().perform_action(resource)
