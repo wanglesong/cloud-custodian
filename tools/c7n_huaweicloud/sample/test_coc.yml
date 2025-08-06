@@ -4,15 +4,15 @@ policies:
     filters:
       - type: value
         key: status
-        value: 'HPUACN278N non_compliant'
+        value: 'non_compliant'
         op: eq
       - type: value
         key: report_scene
-        value: '3NIEAKPSVY ECS'
+        value: 'ECS'
         op: eq
       - type: value
         key: operating_system
-        value: 'GHBm5R CentOS'
+        value: 'CentOS'
         op: eq
       - type: value
         key: region
@@ -22,7 +22,7 @@ policies:
       - type: patch_non_compliant_alarm
         topic_urn_list:
           - 'urn:smn:cn-north-4:ce8476c174f94c6991ea7885e3380d99:itau'
-        subject: 'Machine Non-compliant Patch Version Alert Dh1mqZ8UW6hlum8mlFc'
+        subject: 'Machine Non-compliant Patch Version Alert'
         message: 'There are machines with non compliant patch versions installed under your account'
   - name: script-non-reviewer-alarm
     resource: huaweicloud.coc-script
@@ -32,5 +32,5 @@ policies:
       - type: script_non_reviewer_alarm
         topic_urn_list:
           - 'urn:smn:cn-north-4:ce8476c174f94c6991ea7885e3380d99:itau'
-        subject: 'Script Security Non-Compliance Alert Z0Ph0Nov2ZPN7mq'
+        subject: 'Script Security Non-Compliance Alert'
         message: 'The following script has been found to lack an assigned reviewer, which constitutes a security non-compliance. Please promptly assign a reviewer.'
