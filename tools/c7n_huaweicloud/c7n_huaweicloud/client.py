@@ -39,6 +39,7 @@ from huaweicloudsdkdeh.v1 import DeHClient, ListDedicatedHostsRequest
 from huaweicloudsdkdeh.v1.region.deh_region import DeHRegion
 from huaweicloudsdker.v3 import ErClient, ListEnterpriseRoutersRequest
 from huaweicloudsdker.v3.region.er_region import ErRegion
+from obs import ObsClient
 from huaweicloudsdkces.v2 import CesClient, ListAlarmRulesRequest
 from huaweicloudsdkces.v2.region.ces_region import CesRegion
 from huaweicloudsdkkafka.v2 import KafkaClient, ListInstancesRequest
@@ -179,10 +180,9 @@ class Session:
             self.domain_name = options.get("name")
             self.status = options.get("status")
             self.tags = options.get("tags")
-        self.ak = self.ak or "HPUAMOIAZMDKZAFLJUHZ"
-        self.sk = self.sk or "iqNGBuWtn5xNGy7hXIQ2z3eG0YfVaJAZlbgz47eI"
-        self.region = self.region or "cn-north-4"
-        self.domain_id = "6c32da5009074a9f827666046bc36170"
+        self.ak = self.ak or os.getenv("HUAWEI_ACCESS_KEY_ID")
+        self.sk = self.sk or os.getenv("HUAWEI_SECRET_ACCESS_KEY")
+        self.region = self.region or os.getenv("HUAWEI_DEFAULT_REGION")
 
         if not self.region:
             log.error(
@@ -294,6 +294,8 @@ class Session:
                 .with_region(DeHRegion.value_of(self.region))
                 .build()
             )
+        elif service == "obs":
+            client = self.region_client(service, self.region)
         elif service == "ces":
             client = (
                 CesClient.new_builder()
@@ -590,6 +592,14 @@ class Session:
             sk = credentials.sk
             token = credentials.security_token
 
+        if service == "obs":
+            server = "https://obs." + region + ".myhuaweicloud.com"
+            client = ObsClient(
+                access_key_id=ak,
+                secret_access_key=sk,
+                server=server,
+                security_token=token,
+            )
         return client
 
     def request(self, service):
