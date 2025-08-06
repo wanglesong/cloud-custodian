@@ -3,7 +3,7 @@ policies:
     resource: huaweicloud.coc-script
     mode:
       type: cloudtrace
-      xrole: CustodianExecutionForFunctionAgency
+      xrole: fgs_default_agency
       enable_lts_log: true
       log_level: INFO
       user_data_encrypt_kms_key_id: ""
@@ -18,14 +18,18 @@ policies:
         subnet_name: "subnet-default"
         cidr: "192.168.0.0/24"
       events:
-        - source: "COC.cmk"
-          event: "createKey"
+        - source: "COC.document"
+          event: "CreateScript"
           ids: "resource_id"
-          code: 201
+          code: 200
+        - source: "COC.document"
+          event: "UpdateScript"
+          ids: "resource_id"
+          code: 200
     filters:
       - type: value
         key: properties.risk_level
-        value: 'HIGH'
+        value: 'MEDIUM'
       - type: value
         key: properties.reviewers
         value: []

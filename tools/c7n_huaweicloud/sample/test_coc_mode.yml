@@ -3,7 +3,7 @@ policies:
     resource: huaweicloud.coc-script
     mode:
       type: huaweicloud-periodic
-      xrole: CustodianExecutionForFunctionAgency
+      xrole: fgs_default_agency
       enable_lts_log: true
       log_level: INFO
       user_data_encrypt_kms_key_id: ""
