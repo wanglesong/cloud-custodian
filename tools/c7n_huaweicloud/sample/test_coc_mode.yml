@@ -1,5 +1,5 @@
 policies:
-  - name: script-non-reviewer-alarm
+  - name: Huawei_COC_001_Timer_Trigger
     resource: huaweicloud.coc-script
     mode:
       type: huaweicloud-periodic
@@ -22,4 +22,4 @@ policies:
         topic_urn_list:
           - 'urn:smn:cn-north-4:ce8476c174f94c6991ea7885e3380d99:itau'
         subject: 'Script Security Non-Compliance Alert'
-        message: 'The following script has been found to lack an assigned reviewer, which constitutes a security non-compliance. Please promptly assign a reviewer.'
+        message: "Alert by Huawei_COC_001_Timer_Trigger : No approver is set for the script. Please handle it in time."
