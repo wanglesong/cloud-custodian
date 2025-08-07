@@ -212,7 +212,7 @@ class ScriptNonReviewerAlarm(HuaweiCloudBaseAction):
             script_name = resource.get('name', '')
             operator = resource.get('operator', '')
             properties = resource.get('properties', '')
-            risk_level = properties.get('risk_level') if not properties else ''
+            risk_level = properties.get('risk_level') if properties else ''
 
             script_non_reviewer_data += (f'script_id: {script_id}, script_name: {script_name}, operator: {operator}, '
                                          f'risk_level: {risk_level}\n')
