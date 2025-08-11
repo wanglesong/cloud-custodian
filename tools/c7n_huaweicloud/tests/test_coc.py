@@ -36,7 +36,7 @@ class CocAlarmTest(BaseTest):
                 "type": "patch_non_compliant_alarm",
                 "topic_urn_list": ["urn:smn:region:account-id:topic-name"],
                 "subject": "Machine Non-compliant Patch Version Alert",
-                "message": "There are machines with non compliant patch versions installed under your account"
+                "message": "There are machines with non compliant patch versions"
             }]
         },
             session_factory=factory)
@@ -54,7 +54,7 @@ class CocAlarmTest(BaseTest):
         self.assertEqual(len(resources), 1)
         self.assertEqual(resources['data'][0]["total"], 212)
 
-    def test_script_non_reviewer_query(self):
+    def test_script_non_reviewer_alarm(self):
         factory = self.replay_flight_data('script_non_reviewer_alarm')
         p = self.load_policy({
             "name": "script_non_reviewer_alarm",
@@ -72,7 +72,7 @@ class CocAlarmTest(BaseTest):
         self.assertEqual(len(resources), 2)
         self.assertEqual(resources[0]["name"], "gzz_213546")
 
-    def test_script_non_reviewer_query1(self):
+    def test_script_non_reviewer_alarm2(self):
         factory = self.replay_flight_data('script_non_reviewer_alarm')
         p = self.load_policy({
             "name": "script_non_reviewer_alarm",
