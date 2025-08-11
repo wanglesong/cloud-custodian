@@ -442,7 +442,7 @@ class Session:
             client = (
                 CocClient.new_builder()
                 .with_credentials(globalCredentials)
-                .with_region(CocRegion.value_of("cn-north-4"))
+                .with_region(CocRegion.AP_SOUTHEAST_3)
                 .build()
             )
         elif service in ["org-policy", "org-unit", "org-account"]:
