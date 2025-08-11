@@ -75,11 +75,13 @@ class PatchNonCompliantAlarm(HuaweiCloudBaseAction):
 
         topic_urn_list = self.data.get('topic_urn_list', [])
         subject = self.data.get('subject', 'Patch Security Non-Compliance Alert')
-        message = self.data.get('message', 'Non-Compliance patches are detected on the following hosts, '
-                                           'Please Repair the patches in time. Ecs host list:\n')
+        message = self.data.get('message', 'Non-Compliance patches are detected on the following'
+                                           ' hosts, Please Repair the patches in time. '
+                                           'Ecs host list:\n')
 
         if len(topic_urn_list) < 1:
-            raise PolicyValidationError("Can not create smn alarm message when parameter:topic_urn is None.")
+            raise PolicyValidationError("Can not create smn alarm message when parameter: "
+                                        "topic_urn is None.")
 
         patch_non_compliant_data = ''
         for resource in resources:
@@ -87,8 +89,9 @@ class PatchNonCompliantAlarm(HuaweiCloudBaseAction):
             region = resource.get('region')
             ecs_instance_id = resource.get('instance_id')
             non_compliant_count = resource.get('non_compliant_summary').get('non_compliant_count')
-            patch_non_compliant_data = (f'ecs_name: {ecs_name}, ecs_instance_id: {ecs_instance_id}, '
-                                        f'region: {region}, non_compliant_count: {non_compliant_count}')
+            patch_non_compliant_data = (f'region: {region}, ecs_name: {ecs_name}, '
+                                        f'ecs_instance_id: {ecs_instance_id}, '
+                                        f'non_compliant_count: {non_compliant_count}')
 
         results = []
         for topic_urn in topic_urn_list:
@@ -199,12 +202,14 @@ class ScriptNonReviewerAlarm(HuaweiCloudBaseAction):
 
         topic_urn_list = self.data.get('topic_urn_list', [])
         subject = self.data.get('subject', 'Script Security Non Compliance Alert')
-        message = self.data.get('message', 'The following script has been found to lack an assigned reviewer, '
-                                           'which constitutes a security non-compliance.\n'
+        message = self.data.get('message', 'The following script has been found to lack '
+                                           'an assigned reviewer, which constitutes a '
+                                           'security non-compliance.\n'
                                            'Please promptly assign a reviewer. Script list:')
 
         if len(topic_urn_list) < 1:
-            raise PolicyValidationError("Can not create smn alarm message when parameter:topic_urn is None.")
+            raise PolicyValidationError("Can not create smn alarm message when parameter: "
+                                        "topic_urn is None.")
 
         script_non_reviewer_data = ''
         for resource in resources:
@@ -214,7 +219,8 @@ class ScriptNonReviewerAlarm(HuaweiCloudBaseAction):
             properties = resource.get('properties', '')
             risk_level = properties.get('risk_level') if properties else ''
 
-            script_non_reviewer_data += (f'script_id: {script_id}, script_name: {script_name}, operator: {operator}, '
+            script_non_reviewer_data += (f'script_id: {script_id}, script_name: {script_name}, '
+                                         f'operator: {operator}, '
                                          f'risk_level: {risk_level}\n')
 
         results = []
